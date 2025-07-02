@@ -705,16 +705,6 @@ var (
 			Owner:        grafanaDatavizSquad,
 		},
 		{
-			// this is mainly used as a way to quickly disable query hints as a safeguard for our infrastructure
-			Name:           "lokiQueryHints",
-			Description:    "Enables query hints for Loki",
-			Stage:          FeatureStageGeneralAvailability,
-			FrontendOnly:   true,
-			Expression:     "true",
-			Owner:          grafanaObservabilityLogsSquad,
-			AllowSelfServe: false,
-		},
-		{
 			Name:              "kubernetesFeatureToggles",
 			Description:       "Use the kubernetes API for feature toggle management in the frontend",
 			Stage:             FeatureStageExperimental,
@@ -1145,7 +1135,8 @@ var (
 		{
 			Name:           "improvedExternalSessionHandling",
 			Description:    "Enables improved support for OAuth external sessions. After enabling this feature, users might need to re-authenticate themselves.",
-			Stage:          FeatureStagePublicPreview,
+			Stage:          FeatureStageGeneralAvailability,
+			Expression:     "true", // enabled by default
 			Owner:          identityAccessTeam,
 			AllowSelfServe: true,
 		},
@@ -1367,7 +1358,8 @@ var (
 		{
 			Name:           "improvedExternalSessionHandlingSAML",
 			Description:    "Enables improved support for SAML external sessions. Ensure the NameID format is correctly configured in Grafana for SAML Single Logout to function properly.",
-			Stage:          FeatureStagePublicPreview,
+			Stage:          FeatureStageGeneralAvailability,
+			Expression:     "true", // enabled by default
 			Owner:          identityAccessTeam,
 			AllowSelfServe: true,
 		},
@@ -1674,15 +1666,6 @@ var (
 			HideFromAdminPage: true,
 			HideFromDocs:      true,
 			Expression:        "true", // enabled by default
-		},
-		{
-			Name:              "extensionsReadOnlyProxy",
-			Description:       "Use proxy-based read-only objects for plugin extensions instead of deep cloning",
-			Stage:             FeatureStageExperimental,
-			Owner:             grafanaPluginsPlatformSquad,
-			HideFromAdminPage: true,
-			HideFromDocs:      true,
-			FrontendOnly:      true,
 		},
 		{
 			Name:              "kubernetesAuthzApis",
