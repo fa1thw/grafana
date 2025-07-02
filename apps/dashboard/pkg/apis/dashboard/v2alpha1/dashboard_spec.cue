@@ -738,6 +738,8 @@ QueryVariableSpec: {
 	allValue?:    string
 	placeholder?: string
 	allowCustomValue: bool | *true
+	staticOptions?: string
+	staticOptionsOrder?: "before" | "after" | "sorted"
 }
 
 // Query variable kind

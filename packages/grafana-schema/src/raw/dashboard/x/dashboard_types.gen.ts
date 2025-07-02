@@ -192,6 +192,14 @@ export interface VariableModel {
    */
   sort?: VariableSort;
   /**
+   * Additional static options for query variable
+   */
+  staticOptions?: string;
+  /**
+   * Ordering of static options in relation to options returned from data source for query variable
+   */
+  staticOptionsOrder?: ('before' | 'after' | 'sorted');
+  /**
    * Type of variable
    */
   type: VariableType;

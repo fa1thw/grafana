@@ -190,6 +190,8 @@ export function createSceneVariableFromVariableModel(variable: TypedVariableMode
       hide: variable.hide,
       definition: variable.definition,
       allowCustomValue: variable.allowCustomValue,
+      staticOptions: variable.staticOptions,
+      staticOptionsOrder: variable.staticOptionsOrder,
     });
   } else if (variable.type === 'datasource') {
     return new DataSourceVariable({
