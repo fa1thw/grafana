@@ -2,8 +2,11 @@ package identity_test
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"testing"
 
+	"github.com/grafana/authlib/authn"
 	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana/pkg/apimachinery/identity"
@@ -22,5 +25,40 @@ func TestRequesterFromContext(t *testing.T) {
 		actual, err := identity.GetRequester(ctx)
 		require.NoError(t, err)
 		require.Equal(t, expected.GetUID(), actual.GetUID())
+	})
+}
+
+func TestWithServiceIdentity(t *testing.T) {
+	t.Run("with a custom service identity name", func(t *testing.T) {
+		customName := "custom-service"
+		orgID := int64(1)
+		ctx, requester := identity.WithServiceIdentity(context.Background(), orgID, identity.WithServiceIdentityName(customName))
+		require.NotNil(t, requester)
+		require.Equal(t, orgID, requester.GetOrgID())
+		require.Equal(t, customName, requester.GetExtra()[string(authn.ServiceIdentityKey)][0])
+		require.Contains(t, slices.Collect(maps.Keys(requester.GetPermissions())), "secret.grafana.app/securevalues:decrypt")
+
+		fromCtx, err := identity.GetRequester(ctx)
+		require.NoError(t, err)
+		require.Equal(t, customName, fromCtx.GetExtra()[string(authn.ServiceIdentityKey)][0])
+
+		anotherCustomName := "another-custom-service"
+		anotherOrgID := int64(2)
+		ctx = identity.WithServiceIdentityContext(ctx, anotherOrgID, identity.WithServiceIdentityName(anotherCustomName))
+
+		fromCtx, err = identity.GetRequester(ctx)
+		require.NoError(t, err)
+		require.Equal(t, anotherOrgID, fromCtx.GetOrgID())
+		require.Equal(t, anotherCustomName, fromCtx.GetExtra()[string(authn.ServiceIdentityKey)][0])
+	})
+
+	t.Run("without a custom service identity name", func(t *testing.T) {
+		ctx, requester := identity.WithServiceIdentity(context.Background(), 1)
+		require.NotNil(t, requester)
+		require.Empty(t, requester.GetExtra()[string(authn.ServiceIdentityKey)])
+
+		fromCtx, err := identity.GetRequester(ctx)
+		require.NoError(t, err)
+		require.Empty(t, fromCtx.GetExtra()[string(authn.ServiceIdentityKey)])
 	})
 }
