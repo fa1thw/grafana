@@ -55,7 +55,7 @@ export default function (env: Record<string, unknown> = {}): Configuration {
   };
 
   if (env.development) {
-    config.devServer = devServer;
+    config.devServer = devServer(Boolean(env.development));
   }
 
   return config;

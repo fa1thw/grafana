@@ -3,10 +3,10 @@ import rspack, {
   type Optimization,
   type RuleSetRules,
   type ExperimentCacheOptions,
-  ResolveOptions,
+  type ResolveOptions,
 } from '@rspack/core';
 import type { Configuration as DevServerConfiguration } from '@rspack/dev-server';
-import ReactRefreshPlugin from '@rspack/plugin-react-refresh';
+import { ReactRefreshRspackPlugin } from '@rspack/plugin-react-refresh';
 import AssetsPlugin from 'assets-webpack-plugin';
 import ESLintPlugin from 'eslint-rspack-plugin';
 import { createRequire } from 'node:module';
@@ -31,7 +31,7 @@ export function getOutput(env: Record<string, unknown> = {}) {
     path: resolve(import.meta.dirname, '../../public/build'),
     filename: env.production ? '[name].[contenthash].js' : '[name].js',
     cssFilename: env.production ? '[name].[contenthash].css' : '[name].css',
-    publicPath: 'public/build/',
+    // publicPath: 'auto',
   };
 }
 
@@ -41,11 +41,6 @@ export function getAliases(env: Record<string, unknown> = {}) {
   const developmentAliases = {
     // Packages linked for development need react to be resolved from the same location
     react: resolve('./node_modules/react'),
-
-    // Also Grafana packages need to be resolved from the same location so they share
-    // the same singletons
-    '@grafana/runtime': resolve(import.meta.dirname, '../../packages/grafana-runtime'),
-    '@grafana/data': resolve(import.meta.dirname, '../../packages/grafana-data'),
 
     // This is required to correctly resolve react-router-dom when linking with
     //  local version of @grafana/scenes
@@ -86,20 +81,20 @@ export function getPlugins(env: Record<string, unknown> = {}) {
       },
     }),
     new rspack.CssExtractRspackPlugin({
-      filename: 'grafana.[name].[contenthash].css',
+      filename: env.production ? 'grafana.[name].[contenthash].css' : 'grafana.[name].css',
     }),
     new rspack.EnvironmentPlugin(envConfig),
     new AssetsPlugin({
       entrypoints: true,
-      useCompilerPath: true,
-      filename: 'assets-manifest.json',
+      // useCompilerPath: true,
+      removeFullPathAutoPrefix: true,
+      filename: './public/build/assets-manifest.json',
       processOutput: (assets) => {
         const arrayify = (value) => (Array.isArray(value) ? value : [value]);
-        const devServerPath = 'http://localhost:3000';
         const entrypoints = Object.entries(assets).reduce(
           (acc, [key, value]) => {
             const valuesAsArray = Object.entries(value).reduce((acc, [key, value]) => {
-              const devServerAssets = arrayify(value).map((asset) => `${devServerPath}/${asset}`);
+              const devServerAssets = arrayify(value).map((asset) => `${asset}`);
               acc[key] = arrayify(devServerAssets);
               return acc;
             }, {});
@@ -121,7 +116,7 @@ export function getPlugins(env: Record<string, unknown> = {}) {
   ];
 
   const developmentPlugins = [
-    // new ReactRefreshPlugin(),
+    new ReactRefreshRspackPlugin(),
     // new rspack.HotModuleReplacementPlugin(),
     new TsCheckerRspackPlugin({
       async: true, // don't block webpack emit
@@ -166,54 +161,75 @@ export function getExperiments(env: Record<string, unknown> = {}) {
 export function getModuleRules(env: Record<string, unknown> = {}) {
   const commonModuleRules: RuleSetRules = [
     {
-      test: /\.(j|t)s$/,
-      exclude: [/[\\/]node_modules[\\/]/],
-      loader: 'builtin:swc-loader',
-      options: {
-        jsc: {
-          parser: {
-            syntax: 'typescript',
-          },
-          externalHelpers: true,
-          transform: {
-            react: {
-              runtime: 'automatic',
-              development: Boolean(env.development),
-              // refresh: Boolean(env.development),
+      test: /\.(jsx?|tsx?)$/,
+      use: [
+        {
+          loader: 'builtin:swc-loader',
+          options: {
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+                tsx: true,
+              },
+              transform: {
+                react: {
+                  runtime: 'automatic',
+                  development: Boolean(env.development),
+                  refresh: Boolean(env.development),
+                },
+              },
             },
+            // env: { targets: 'defaults' },
           },
         },
-      },
+      ],
     },
-    {
-      test: /\.(j|t)sx$/,
-      loader: 'builtin:swc-loader',
-      exclude: [/[\\/]node_modules[\\/]/],
-      options: {
-        jsc: {
-          parser: {
-            syntax: 'typescript',
-            tsx: true,
-          },
-          transform: {
-            react: {
-              runtime: 'automatic',
-              development: Boolean(env.development),
-              // refresh: Boolean(env.development),
-            },
-          },
-          externalHelpers: true,
-        },
-      },
-    },
+    // {
+    //   test: /\.(j|t)s$/,
+    //   exclude: [/[\\/]node_modules[\\/]/],
+    //   loader: 'builtin:swc-loader',
+    //   options: {
+    //     jsc: {
+    //       parser: {
+    //         syntax: 'typescript',
+    //       },
+    //       externalHelpers: true,
+    //       transform: {
+    //         react: {
+    //           runtime: 'automatic',
+    //           development: Boolean(env.development),
+    //           // refresh: Boolean(env.development),
+    //         },
+    //       },
+    //     },
+    //   },
+    // },
+    // {
+    //   test: /\.(j|t)sx$/,
+    //   loader: 'builtin:swc-loader',
+    //   exclude: [/[\\/]node_modules[\\/]/],
+    //   options: {
+    //     jsc: {
+    //       parser: {
+    //         syntax: 'typescript',
+    //         tsx: true,
+    //       },
+    //       transform: {
+    //         react: {
+    //           runtime: 'automatic',
+    //           development: Boolean(env.development),
+    //           // refresh: Boolean(env.development),
+    //         },
+    //       },
+    //       externalHelpers: true,
+    //     },
+    //   },
+    // },
     {
       test: /\.(sa|sc|c)ss$/,
       use: [
         {
           loader: CssExtractRspackPlugin.loader,
-          options: {
-            publicPath: './',
-          },
         },
         {
           loader: 'css-loader',
@@ -296,20 +312,29 @@ export const nodePolyfills: ResolveOptions['fallback'] = {
   // string_decoder: false,
 };
 
-export const devServer: DevServerConfiguration = {
-  hot: true,
-  headers: {
-    'Access-Control-Allow-Origin': '*',
-  },
-  client: {
-    overlay: false,
-  },
-  historyApiFallback: true,
-  // static: ['public/fonts', 'public/img'],
-  devMiddleware: {
-    publicPath: `/public/build`,
-  },
-};
+export function devServer(isDevelopment: boolean): DevServerConfiguration {
+  if (!isDevelopment || !envConfig.frontend_dev_server) {
+    return {};
+  }
+  return {
+    hot: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+    client: {
+      overlay: false,
+    },
+    historyApiFallback: true,
+    static: {
+      // Because all our source code lives under public/ webpack-dev-server sees them as static assets and forces a full page reload.
+      directory: resolve(import.meta.dirname, '../../public/build/static'),
+    },
+    // static: ['public/fonts', 'public/img'],
+    // devMiddleware: {
+    // publicPath: `/public/build`,
+    // },
+  };
+}
 
 export function getOptimizations(env: Record<string, unknown> = {}) {
   if (env.development) {
