@@ -24,7 +24,7 @@ const SORT_OPTIONS = [
 ];
 
 export function QueryVariableStaticOptions(props: QueryVariableStaticOptionsProps) {
-  const { staticOptions, onStaticOptionsChange, staticOptionsOrder, onStaticOptionsOrderChange, testId } = props;
+  const { staticOptions, onStaticOptionsChange, staticOptionsOrder, onStaticOptionsOrderChange } = props;
 
   const onStaticOptionsBlur = (event: FormEvent<HTMLTextAreaElement>) => {
     const value = event.currentTarget.value;
